@@ -6,6 +6,7 @@ import nmap
 import re
 import socket
 import subprocess
+import tempfile
 from ipaddress import ip_network, IPv4Network
 from typing import Dict, List, Tuple, Optional
 from datetime import datetime
@@ -32,7 +33,7 @@ class IPValidator:
     @staticmethod
     def is_valid_ipv4(ip: str) -> bool:
         """Validate single IPv4 address"""
-        pattern = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
+        pattern = r"^(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$"
         return bool(re.match(pattern, ip))
 
     @staticmethod
@@ -133,10 +134,10 @@ class NmapScanner:
             self.start_time = datetime.now()
             self.nm = nmap.PortScanner()
 
-            # Run scan with XML output for better parsing
+            # Run scan without XML output flag (python-nmap handles it internally)
             self.nm.scan(
                 hosts=self.target,
-                arguments=f"{nmap_args} -oX -",
+                arguments=nmap_args,
                 timeout=TIMEOUT_SECONDS,
             )
 
@@ -157,6 +158,9 @@ class NmapScanner:
             return False
         except Exception as e:
             logger.error(f"Unexpected error during scan: {str(e)}")
+            if self.verbose:
+                import traceback
+                traceback.print_exc()
             return False
 
     def _parse_results(self) -> None:
